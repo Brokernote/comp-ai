@@ -1,4 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["iad1"]
+  "regions": ["syd1"],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://compliance-api.businesstitan.com.au/api/$1"
+    }
+  ]
 }

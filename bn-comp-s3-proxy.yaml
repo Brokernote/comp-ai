@@ -1,0 +1,70 @@
+location: australiaeast
+name: bn-comp-s3-proxy
+properties:
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 80
+      exposedPort: 0
+      transport: Auto
+      traffic:
+        - weight: 100
+          latestRevision: true
+      allowInsecure: false
+      clientCertificateMode: Ignore
+      stickySessions:
+        affinity: none
+    maxInactiveRevisions: 100
+  template:
+    containers:
+      - image: docker.io/andrewgaul/s3proxy:latest
+        name: bn-comp-s3-proxy
+        env:
+          - name: S3PROXY_AUTHORIZATION
+            value: aws-v4
+          - name: S3PROXY_IDENTITY
+            value: s3proxy-access-key-4613115201
+          - name: S3PROXY_CREDENTIAL
+            value: MhDYBy/AlyJ4ycQzXvDbOBhcQePmEdtXFaWsUKkI7Tw=
+          - name: JCLOUDS_PROVIDER
+            value: azureblob
+          - name: JCLOUDS_ENDPOINT
+            value: https://bncompai.blob.core.windows.net
+          - name: JCLOUDS_IDENTITY
+            value: bncompai
+          - name: JCLOUDS_CREDENTIAL
+            value: luo6BL7BOdGx3l0dQn17yr/gd1bjLFmlT7pRp6j7ukL3Hyf8m2FWQmzzqEzMP3W5Hi+L2Pq0uvDa+AStAXPCgQ==
+          - name: JCLOUDS_AZUREBLOB_AUTH
+            value: azureKey
+          - name: S3PROXY_IGNORE_UNKNOWN_HEADERS
+            value: 'true'
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        probes:
+          - type: Liveness
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 80
+            timeoutSeconds: 5
+          - type: Readiness
+            failureThreshold: 48
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: 80
+            timeoutSeconds: 5
+          - type: Startup
+            failureThreshold: 240
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            successThreshold: 1
+            tcpSocket:
+              port: 80
+            timeoutSeconds: 3
+    scale:
+      minReplicas: 0
+      maxReplicas: 10

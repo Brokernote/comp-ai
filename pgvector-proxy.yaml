@@ -1,0 +1,56 @@
+location: australiaeast
+name: pgvector-proxy
+properties:
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 8080
+      exposedPort: 0
+      transport: Auto
+      traffic:
+        - weight: 100
+          latestRevision: true
+      allowInsecure: false
+    registries:
+      - server: bncompairegistry.azurecr.io
+        identity: system-environment
+    maxInactiveRevisions: 100
+  template:
+    containers:
+      - image: bncompairegistry.azurecr.io/pgvector-proxy:latest
+        name: pgvector-proxy
+        env:
+          - name: DATABASE_URL
+            value: postgresql://compaidbadmin:bYqv32hXAUWG2Ge@bn-comp-ai-db-server.postgres.database.azure.com:5432/vector?sslmode=require
+          - name: PROXY_API_TOKEN
+            value: cf67471ff43c47f2736f53eced727c183ad26610ead70ba8e04c1fd9cbdf34a3
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        probes:
+          - type: Liveness
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 5
+          - type: Readiness
+            failureThreshold: 48
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 5
+          - type: Startup
+            failureThreshold: 240
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 3
+    scale:
+      minReplicas: 0
+      maxReplicas: 10
