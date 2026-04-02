@@ -24,6 +24,9 @@ function getTrustedOriginsLogic(
     'https://portal.staging.trycomp.ai',
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
+    'https://compliance.businesstitan.com.au',
+    'https://trust.brokernote.com.au',
+    'https://compliance-api.businesstitan.com.au',
   ];
 }
 
@@ -46,7 +49,9 @@ function isStaticTrustedOriginLogic(
       url.hostname.endsWith('.trycomp.ai') ||
       url.hostname.endsWith('.staging.trycomp.ai') ||
       url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
+      url.hostname === 'trust.inc' ||
+      url.hostname.endsWith('.businesstitan.com.au') ||
+      url.hostname.endsWith('.brokernote.com.au')
     );
   } catch {
     return false;
