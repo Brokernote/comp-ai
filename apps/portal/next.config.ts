@@ -33,6 +33,10 @@ const config = {
         source: '/ingest/decide',
         destination: 'https://us.i.posthog.com/decide',
       },
+      {
+        source: '/api/:path*',
+        destination: 'https://compliance-api.businesstitan.com.au/api/:path*',
+      },
     ];
   },
   async headers() {

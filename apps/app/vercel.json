@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://compliance-api.businesstitan.com.au/api/$1"
-    }
-  ]
-}
