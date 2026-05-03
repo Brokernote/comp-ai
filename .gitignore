@@ -99,3 +99,6 @@ scripts/sync-release-branch.sh
 .superpowers/*
 .claude/worktrees/
 .worktrees/
+compai.yaml
+comp-ai-private.pfx
+comp-ai-public.cer

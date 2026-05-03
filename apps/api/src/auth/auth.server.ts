@@ -32,6 +32,12 @@ function getCookieDomain(): string | undefined {
   if (baseUrl.includes('trycomp.ai')) {
     return '.trycomp.ai';
   }
+  if (baseUrl.includes('businesstitan.com.au')) {
+    return '.businesstitan.com.au';
+  }
+  if (baseUrl.includes('brokernote.com.au')) {
+    return '.brokernote.com.au';
+  }
   return undefined;
 }
 
@@ -58,6 +64,9 @@ export function getTrustedOrigins(): string[] {
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
     'https://framework-editor.trycomp.ai',
+    'https://compliance.businesstitan.com.au',
+    'https://trust.brokernote.com.au',
+    'https://compliance-api.businesstitan.com.au',
   ];
 }
 
@@ -77,7 +86,9 @@ export function isStaticTrustedOrigin(origin: string): boolean {
       url.hostname.endsWith('.trycomp.ai') ||
       url.hostname.endsWith('.staging.trycomp.ai') ||
       url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
+      url.hostname === 'trust.inc' ||
+      url.hostname.endsWith('.businesstitan.com.au') ||
+      url.hostname.endsWith('.brokernote.com.au')
     );
   } catch {
     return false;
