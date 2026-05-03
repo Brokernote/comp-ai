@@ -7,3 +7,4 @@ out/
 
 # Node modules (also in root .gitignore)
 node_modules/
+electron.vite.config.*.mjs

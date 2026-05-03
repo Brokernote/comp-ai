@@ -97,5 +97,9 @@ scripts/sync-release-branch.sh
 .claude/audit-findings.md
 
 .superpowers/*
+compai.yaml
+comp-ai-private.pfx
+comp-ai-public.cer
+
 .claude/worktrees/
 .worktrees/
