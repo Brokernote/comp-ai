@@ -5,7 +5,7 @@ import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
-  project: 'proj_lhxjliiqgcdyqbgtucda',
+  project: 'proj_jetogeknrlgspkjzapky',
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
