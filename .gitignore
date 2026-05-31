@@ -104,4 +104,3 @@ comp-ai-public.cer
 .claude/worktrees/
 .worktrees/
 upload-secrets.ps1
-compai.yaml
