@@ -1,40 +1,52 @@
+id: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/containerapps/bn-comp-s3-proxy
 location: australiaeast
 name: bn-comp-s3-proxy
+identity:
+  type: SystemAssigned
 properties:
+  environmentId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env
   configuration:
     activeRevisionsMode: Single
     ingress:
+      allowInsecure: false
       external: true
       targetPort: 80
-      exposedPort: 0
       transport: Auto
-      traffic:
-        - weight: 100
-          latestRevision: true
-      allowInsecure: false
-      clientCertificateMode: Ignore
-      stickySessions:
-        affinity: none
-    maxInactiveRevisions: 100
+    registries:
+      - identity: system-environment
+        server: bncompairegistry.azurecr.io
+    secrets:
+      - name: s3proxy-identity
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/S3PROXY-IDENTITY
+        identity: system
+      - name: s3proxy-credential
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/S3PROXY-CREDENTIAL
+        identity: system
+      - name: jclouds-identity
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/JCLOUDS-IDENTITY
+        identity: system
+      - name: jclouds-credential
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/JCLOUDS-CREDENTIAL
+        identity: system
   template:
     containers:
-      - image: docker.io/andrewgaul/s3proxy:latest
-        name: bn-comp-s3-proxy
+      - name: bn-comp-s3-proxy
+        image: docker.io/andrewgaul/s3proxy:latest
         env:
           - name: S3PROXY_AUTHORIZATION
             value: aws-v4
           - name: S3PROXY_IDENTITY
-            value: s3proxy-access-key-4613115201
+            secretRef: s3proxy-identity
           - name: S3PROXY_CREDENTIAL
-            value: MhDYBy/AlyJ4ycQzXvDbOBhcQePmEdtXFaWsUKkI7Tw=
+            secretRef: s3proxy-credential
           - name: JCLOUDS_PROVIDER
             value: azureblob
           - name: JCLOUDS_ENDPOINT
             value: https://bncompai.blob.core.windows.net
           - name: JCLOUDS_IDENTITY
-            value: bncompai
+            secretRef: jclouds-identity
           - name: JCLOUDS_CREDENTIAL
-            value: luo6BL7BOdGx3l0dQn17yr/gd1bjLFmlT7pRp6j7ukL3Hyf8m2FWQmzzqEzMP3W5Hi+L2Pq0uvDa+AStAXPCgQ==
+            secretRef: jclouds-credential
           - name: JCLOUDS_AZUREBLOB_AUTH
             value: azureKey
           - name: S3PROXY_IGNORE_UNKNOWN_HEADERS

@@ -6,7 +6,6 @@
     "@aws-sdk/client-securityhub": "^3.0.0",
     "@aws-sdk/client-sts": "^3.0.0",
     "@azure/identity": "^4.10.0",
-    "@trycompai/app": "workspace:*",
     "ai": "^6.0.175",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.6.7",

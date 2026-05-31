@@ -1,0 +1,122 @@
+id: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/containerapps/bn-comp-portal
+location: australiaeast
+name: bn-comp-portal
+identity:
+  type: SystemAssigned
+properties:
+  environmentId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      allowInsecure: false
+      customDomains:
+        - bindingType: SniEnabled
+          certificateId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env/managedCertificates/mc-bn-comp-secure-trust-businessti-3515
+          name: trust.businesstitan.com.au
+      external: true
+      targetPort: 3000
+      transport: Auto
+    registries:
+      - identity: system-environment
+        server: bncompairegistry.azurecr.io
+    secrets:
+      - name: database-url
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/DATABASE-URL
+        identity: system
+      - name: auth-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/AUTH-SECRET
+        identity: system
+      - name: better-auth-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/BETTER-AUTH-SECRET
+        identity: system
+      - name: openai-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/OPENAI-API-KEY
+        identity: system
+      - name: trigger-secret-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/TRIGGER-SECRET-KEY
+        identity: system
+      - name: secret-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/SECRET-KEY
+        identity: system
+      - name: upstash-redis-rest-token
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/UPSTASH-REDIS-REST-TOKEN
+        identity: system
+      - name: app-aws-secret-access-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/S3PROXY-CREDENTIAL
+        identity: system
+      - name: resend-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/RESEND-API-KEY
+        identity: system
+      - name: google-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/GOOGLE-SECRET
+        identity: system
+      - name: firecrawl-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/FIRECRAWL-API-KEY
+        identity: system
+  template:
+    containers:
+      - name: bn-comp-portal
+        image: bncompairegistry.azurecr.io/comp-portal:latest
+        env:
+          - name: NODE_ENV
+            value: production
+          - name: NEXT_PUBLIC_SELF_HOSTED
+            value: 'true'
+          - name: NEXT_PUBLIC_API_URL
+            value: https://compliance-api.businesstitan.com.au
+          - name: NEXT_PUBLIC_BETTER_AUTH_URL
+            value: https://compliance-api.businesstitan.com.au
+          - name: NEXT_PUBLIC_PORTAL_URL
+            value: https://trust.businesstitan.com.au
+          - name: DATABASE_URL
+            secretRef: database-url
+          - name: AUTH_SECRET
+            secretRef: auth-secret
+          - name: BETTER_AUTH_SECRET
+            secretRef: better-auth-secret
+          - name: HOST
+            value: 0.0.0.0
+          - name: PORT
+            value: '3000'
+          - name: APP_AWS_ACCESS_KEY_ID
+            value: s3proxy-access-key-4613115201
+          - name: APP_AWS_SECRET_ACCESS_KEY
+            secretRef: app-aws-secret-access-key
+          - name: APP_AWS_REGION
+            value: us-east-1
+          - name: APP_AWS_ENDPOINT
+            value: http://bn-comp-s3-proxy.internal.australiaeast.azurecontainerapps.io
+          - name: APP_AWS_BUCKET_NAME
+            value: comp-ai-evidence
+          - name: APP_AWS_KNOWLEDGE_BASE_BUCKET
+            value: comp-ai-knowledge
+          - name: APP_AWS_ORG_ASSETS_BUCKET
+            value: comp-ai-org-assets
+          - name: APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET
+            value: comp-ai-questionnaire
+          - name: AUTH_GOOGLE_ID
+            value: 226890705567-keja87pb6rcr4cf5bkmd260krsi30ffh.apps.googleusercontent.com
+          - name: AUTH_GOOGLE_SECRET
+            secretRef: google-secret
+          - name: FIRECRAWL_API_KEY
+            secretRef: firecrawl-api-key
+          - name: FLEET_AGENT_BUCKET_NAME
+            value: device-agents
+          - name: OPENAI_API_KEY
+            secretRef: openai-api-key
+          - name: RESEND_API_KEY
+            secretRef: resend-api-key
+          - name: SECRET_KEY
+            secretRef: secret-key
+          - name: TRIGGER_SECRET_KEY
+            secretRef: trigger-secret-key
+          - name: UPSTASH_REDIS_REST_URL
+            value: https://crucial-alien-76988.upstash.io
+          - name: UPSTASH_REDIS_REST_TOKEN
+            secretRef: upstash-redis-rest-token
+        resources:
+          cpu: 1
+          memory: 2Gi
+    scale:
+      minReplicas: 0
+      maxReplicas: 3

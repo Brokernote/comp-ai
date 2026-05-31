@@ -1,30 +1,36 @@
+id: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/containerapps/pgvector-proxy
 location: australiaeast
 name: pgvector-proxy
+identity:
+  type: SystemAssigned
 properties:
+  environmentId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env
   configuration:
     activeRevisionsMode: Single
     ingress:
+      allowInsecure: false
       external: true
       targetPort: 8080
-      exposedPort: 0
       transport: Auto
-      traffic:
-        - weight: 100
-          latestRevision: true
-      allowInsecure: false
     registries:
-      - server: bncompairegistry.azurecr.io
-        identity: system-environment
-    maxInactiveRevisions: 100
+      - identity: system-environment
+        server: bncompairegistry.azurecr.io
+    secrets:
+      - name: vector-database-url
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/VECTOR-DATABASE-URL
+        identity: system
+      - name: proxy-api-token
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/PGVECTOR-PROXY-TOKEN
+        identity: system
   template:
     containers:
-      - image: bncompairegistry.azurecr.io/pgvector-proxy:latest
-        name: pgvector-proxy
+      - name: pgvector-proxy
+        image: bncompairegistry.azurecr.io/pgvector-proxy:latest
         env:
           - name: DATABASE_URL
-            value: postgresql://compaidbadmin:bYqv32hXAUWG2Ge@bn-comp-ai-db-server.postgres.database.azure.com:5432/vector?sslmode=require
+            secretRef: vector-database-url
           - name: PROXY_API_TOKEN
-            value: cf67471ff43c47f2736f53eced727c183ad26610ead70ba8e04c1fd9cbdf34a3
+            secretRef: proxy-api-token
         resources:
           cpu: 0.5
           memory: 1Gi

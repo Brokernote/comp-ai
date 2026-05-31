@@ -107,80 +107,95 @@ If you are using Azure PostgreSQL Flexible Server:
 
 ## 3. Dockerizing the Next.js Apps
 
-Your project uses Bun. Here is the exact `Dockerfile` required to build a Next.js Turborepo with Bun and standalone output.
+Your repository already has a central, highly optimized multi-stage **`Dockerfile`** at the root of the workspace. Instead of using isolated sub-Dockerfiles (which prune dependencies and break package version hoisting), we will use the root `Dockerfile` with explicit target stages. This mirrors your local development environment perfectly.
 
-**Step 3.1: Create `/apps/app/Dockerfile`**
-Create a new file at `apps/app/Dockerfile` and paste exactly this content:
-
-```dockerfile
-FROM node:20-alpine AS base
-RUN apk update && apk add --no-cache libc6-compat
-RUN npm install -g bun@1.3.3
-
-FROM base AS builder
-WORKDIR /app
-RUN bun add -g turbo
-COPY . .
-RUN turbo prune @trycompai/app --docker
-
-FROM base AS installer
-WORKDIR /app
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/bun.lockb ./bun.lockb
-RUN bun install
-COPY --from=builder /app/out/full/ .
-COPY turbo.json turbo.json
-ENV NEXT_OUTPUT_STANDALONE=true
-RUN turbo build --filter=@trycompai/app
-
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_OUTPUT_STANDALONE=true
-COPY --from=installer /app/apps/app/.next/standalone ./
-COPY --from=installer /app/apps/app/.next/static ./apps/app/.next/static
-COPY --from=installer /app/apps/app/public ./apps/app/public
-
-EXPOSE 3000
-CMD ["node", "server.js"]
-```
-
-**Step 3.2: Create `/apps/portal/Dockerfile`**
-Create a new file at `apps/portal/Dockerfile` and paste the exact same content as above, but change `@trycompai/app` to `@trycompai/portal` (on lines 9 and 20), and `apps/app` to `apps/portal` (on lines 27, 28, 29).
+### How it works:
+- **`app` target:** Builds the compliance frontend (`@trycompai/app`) on top of Bun and produces a minimized Node runtime container using Next.js standalone outputs.
+- **`portal` target:** Builds the employee portal (`@trycompai/portal`) using the same configuration.
+- **`migrator` target:** Builds the ultra-minimal Prisma database migrator container.
 
 ---
 
 ## 4. Deploying to Azure
 
-**Step 4.1: Build and Push the Docker Images**
-_(This can be done locally via CLI or added to GitHub Actions)_
+We will build all four core images locally and push them to your Azure Container Registry (`bncompairegistry.azurecr.io`). Once pushed, we will deploy them inside your secured environment using their respective `yaml` configuration files.
+
+### Step 4.1: Build and Push All Production Images
+
+Run these build commands from the root directory of your project:
 
 ```bash
-# Login to Azure Container Registry
-az acr login --name <YOUR_ACR_NAME>
+# 1. Login to Azure Container Registry
+az acr login --name bncompairegistry
 
-# Build and Push 'app'
-docker build -f apps/app/Dockerfile -t <YOUR_ACR_NAME>.azurecr.io/comp-app:latest .
-docker push <YOUR_ACR_NAME>.azurecr.io/comp-app:latest
+# 2. Build and Push the Compliance Frontend ('comp-app')
+docker build --target app -f Dockerfile -t bncompairegistry.azurecr.io/comp-app:latest .
+docker push bncompairegistry.azurecr.io/comp-app:latest
 
-# Build and Push 'portal'
-docker build -f apps/portal/Dockerfile -t <YOUR_ACR_NAME>.azurecr.io/comp-portal:latest .
-docker push <YOUR_ACR_NAME>.azurecr.io/comp-portal:latest
+# 3. Build and Push the Employee Portal ('comp-portal')
+docker build --target portal -f Dockerfile -t bncompairegistry.azurecr.io/comp-portal:latest .
+docker push bncompairegistry.azurecr.io/comp-portal:latest
+
+# 4. Build and Push the API Backend ('comp-api')
+docker build -f apps/api/Dockerfile.multistage -t bncompairegistry.azurecr.io/comp-api:latest .
+docker push bncompairegistry.azurecr.io/comp-api:latest
+
+# 5. Build and Push the Database Migrator ('comp-migrator')
+docker build --target migrator -f Dockerfile -t bncompairegistry.azurecr.io/comp-migrator:latest .
+docker push bncompairegistry.azurecr.io/comp-migrator:latest
 ```
 
-**Step 4.2: Create the Frontend Container Apps**
+---
 
-1. In the Azure Portal, create a new **Container App**.
-2. Name it `bn-comp-frontend-app`.
-3. Select your new **secured environment** (`bn-comp-secured-env`).
-4. Select the image you just pushed to ACR.
-5. In **Ingress**, enable it, allow traffic from **Anywhere**, and set Target Port to **3000**.
-6. In **Environment Variables**, copy your Vercel variables.
-   - Ensure `DATABASE_URL` uses the private endpoint hostname.
-   - Ensure your S3 variables route to the internal DNS of your `bn-comp-s3-proxy` app.
+### Step 4.2: Run Database Migrations in the VNet
 
-## Open Questions
+Before deploying the services, we must execute the new Prisma database migrations securely inside the private VNet.
 
-- Do these exact steps make sense?
-- Would you like me to go ahead and run the Git patch commands to setup your `azure-migration` branch right now?
-- Would you like me to write the two Dockerfiles into the codebase for you?
+1. **Deploy the Migrator Job Configuration:**
+   Apply the Manual Trigger job using the Azure CLI:
+   ```bash
+   az containerapp job create --name bn-comp-migrator --resource-group brokernote --yaml comp-migrator-job.yaml
+   ```
+2. **Execute Migrations:**
+   Start the one-time job execution:
+   ```bash
+   az containerapp job start --name bn-comp-migrator --resource-group brokernote
+   ```
+   *This executes `bunx prisma migrate deploy` inside the VNet, upgrading your database in seconds. You can track progress in the Azure Portal under Container App Jobs -> Execution History.*
+
+---
+
+### Step 4.3: Deploy and Update the Services
+
+Once the migrations complete successfully, deploy/update your frontend and backend services using their respective VNet configurations:
+
+```bash
+# 1. Deploy the API Backend Service
+az containerapp create --name bn-comp-ai --resource-group brokernote --yaml comp-api.yaml
+
+# 2. Deploy the Compliance Frontend
+az containerapp create --name bn-comp-app --resource-group brokernote --yaml comp-app.yaml
+
+# 3. Deploy the Employee Portal
+az containerapp create --name bn-comp-portal --resource-group brokernote --yaml comp-portal.yaml
+```
+
+---
+
+## 5. Completed Tasks & Verification
+
+### Done:
+1. **Resolved esbuild conflicts:** Aligned entire workspace dependencies to use `esbuild@0.27.7` in the root `package.json` to prevent local hoisting version mismatches.
+2. **Reverted AI SDK updates:** Reverted the root `package.json` back to `ai: ^5.0.179` and restored original lockfile dependency alignments. This fully resolves Next.js compile errors due to v6 breaking changes.
+3. **Optimized build pipeline:** Migrated build commands to target the root `Dockerfile` multi-stage build, ensuring dependency hoisting and lockfile resolution are 100% consistent with local development.
+4. **Aligned API Container Bun versions:** Updated `apps/api/Dockerfile.multistage` to run on Bun `1.2.8` to match the frontend apps perfectly.
+5. **Configured YAML Deployment Descriptors:** Generated 4 premium, plug-and-play YAML deployment files (`comp-api.yaml`, `comp-app.yaml`, `comp-portal.yaml`, `comp-migrator-job.yaml`) to automate environment variable and secret injection.
+
+### Ready for Execution:
+- [ ] Spin up the `bn-comp-vnet` and delegated subnets in Azure.
+- [ ] Build and push the 4 container images to `bncompairegistry`.
+- [ ] Run the database migration job inside the VNet.
+- [ ] Deploy the API and frontends using the new YAML configurations.
+- [ ] Perform standard login validation checks.
+- [ ] Decommission legacy database infrastructure.
+

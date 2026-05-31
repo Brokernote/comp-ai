@@ -1,0 +1,39 @@
+id: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/jobs/bn-comp-migrator
+location: australiaeast
+name: bn-comp-migrator
+type: Microsoft.App/jobs
+identity:
+  type: SystemAssigned
+properties:
+  environmentId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env
+  configuration:
+    triggerType: Manual
+    manualTriggerConfig:
+      replicaCompletionCount: 1
+      parallelism: 1
+    replicaTimeout: 1800
+    replicaRetryLimit: 1
+    registries:
+      - identity: system-environment
+        server: bncompairegistry.azurecr.io
+    secrets:
+      - name: database-url
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/DATABASE-URL
+        identity: system
+  template:
+    containers:
+      - name: migrator
+        image: bncompairegistry.azurecr.io/comp-migrator:latest
+        command:
+          - bun
+          - run
+          - prisma
+          - migrate
+          - deploy
+          - --schema=node_modules/@trycompai/db/dist/schema.prisma
+        env:
+          - name: DATABASE_URL
+            secretRef: database-url
+        resources:
+          cpu: 1
+          memory: 2Gi

@@ -1,0 +1,177 @@
+id: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/containerapps/bn-comp-ai
+location: australiaeast
+name: bn-comp-ai
+identity:
+  type: SystemAssigned
+properties:
+  environmentId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      allowInsecure: false
+      corsPolicy:
+        allowCredentials: true
+        allowedHeaders: ['*']
+        allowedMethods: ['*']
+        allowedOrigins:
+          - https://compliance.businesstitan.com.au
+          - https://trust.brokernote.com.au
+          - https://trust.businesstitan.com.au
+      customDomains:
+        - bindingType: SniEnabled
+          certificateId: /subscriptions/8dba55e9-48ec-42f1-862c-fc14449f7c8b/resourceGroups/brokernote/providers/Microsoft.App/managedEnvironments/bn-comp-secured-env/managedCertificates/mc-bn-comp-secure-compliance-api-b-2968
+          name: compliance-api.businesstitan.com.au
+      external: true
+      targetPort: 3333
+      transport: Auto
+    registries:
+      - identity: system-environment
+        server: bncompairegistry.azurecr.io
+    secrets:
+      - name: database-url
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/DATABASE-URL
+        identity: system
+      - name: openai-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/OPENAI-API-KEY
+        identity: system
+      - name: trigger-secret-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/TRIGGER-SECRET-KEY
+        identity: system
+      - name: auth-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/AUTH-SECRET
+        identity: system
+      - name: secret-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/SECRET-KEY
+        identity: system
+      - name: upstash-redis-rest-token
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/UPSTASH-REDIS-REST-TOKEN
+        identity: system
+      - name: app-aws-secret-access-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/S3PROXY-CREDENTIAL
+        identity: system
+      - name: encryption-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/ENCRYPTION-KEY
+        identity: system
+      - name: resend-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/RESEND-API-KEY
+        identity: system
+      - name: better-auth-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/BETTER-AUTH-SECRET
+        identity: system
+      - name: google-secret
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/GOOGLE-SECRET
+        identity: system
+      - name: upstash-vector-rest-token
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/UPSTASH-VECTOR-REST-TOKEN
+        identity: system
+      - name: firecrawl-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/FIRECRAWL-API-KEY
+        identity: system
+      - name: maced-api-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/MACED-API-KEY
+        identity: system
+  template:
+    containers:
+      - name: bn-comp-ai
+        image: bncompairegistry.azurecr.io/comp-api:latest
+        env:
+          - name: DATABASE_URL
+            secretRef: database-url
+          - name: AUTH_SECRET
+            secretRef: auth-secret
+          - name: MACED_API_KEY
+            secretRef: maced-api-key
+          - name: BETTER_AUTH_SECRET
+            secretRef: better-auth-secret
+          - name: TRUST_APP_URL
+            value: https://trust.businesstitan.com.au
+          - name: NEXT_PUBLIC_SELF_HOSTED
+            value: 'true'
+          - name: RESEND_API_KEY
+            secretRef: resend-api-key
+          - name: TRIGGER_SECRET_KEY
+            secretRef: trigger-secret-key
+          - name: AUTH_GOOGLE_ID
+            value: 226890705567-keja87pb6rcr4cf5bkmd260krsi30ffh.apps.googleusercontent.com
+          - name: AUTH_GOOGLE_SECRET
+            secretRef: google-secret
+          - name: OPENAI_API_KEY
+            secretRef: openai-api-key
+          - name: FIRECRAWL_API_KEY
+            secretRef: firecrawl-api-key
+          - name: SECRET_KEY
+            secretRef: secret-key
+          - name: APP_AWS_ACCESS_KEY_ID
+            value: s3proxy-access-key-4613115201
+          - name: APP_AWS_SECRET_ACCESS_KEY
+            secretRef: app-aws-secret-access-key
+          - name: APP_AWS_REGION
+            value: us-east-1
+          - name: APP_AWS_ENDPOINT
+            value: http://bn-comp-s3-proxy.internal.australiaeast.azurecontainerapps.io
+          - name: APP_AWS_BUCKET_NAME
+            value: comp-ai-evidence
+          - name: UPSTASH_REDIS_REST_URL
+            value: https://crucial-alien-76988.upstash.io
+          - name: UPSTASH_REDIS_REST_TOKEN
+            secretRef: upstash-redis-rest-token
+          - name: BASE_URL
+            value: https://compliance-api.businesstitan.com.au
+          - name: UPSTASH_VECTOR_REST_URL
+            value: http://pgvector-proxy.internal.australiaeast.azurecontainerapps.io:8080
+          - name: UPSTASH_VECTOR_REST_TOKEN
+            secretRef: upstash-vector-rest-token
+          - name: HOST
+            value: 0.0.0.0
+          - name: HOSTNAME
+            value: 0.0.0.0
+          - name: BETTER_AUTH_TRUSTED_ORIGINS
+            value: https://compliance.businesstitan.com.au,https://trust.businesstitan.com.au
+          - name: BETTER_AUTH_URL
+            value: https://compliance-api.businesstitan.com.au
+          - name: ENCRYPTION_KEY
+            secretRef: encryption-key
+          - name: APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET
+            value: comp-ai-questionnaire
+          - name: APP_AWS_KNOWLEDGE_BASE_BUCKET
+            value: comp-ai-knowledge
+          - name: APP_AWS_ORG_ASSETS_BUCKET
+            value: comp-ai-org-assets
+          - name: FLEET_AGENT_BUCKET_NAME
+            value: device-agents
+        resources:
+          cpu: 2
+          memory: 4Gi
+        probes:
+          - type: Liveness
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            tcpSocket:
+              port: 3333
+            timeoutSeconds: 30
+          - type: Readiness
+            failureThreshold: 47
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            tcpSocket:
+              port: 3333
+            timeoutSeconds: 5
+          - type: Startup
+            failureThreshold: 240
+            initialDelaySeconds: 10
+            periodSeconds: 1
+            successThreshold: 1
+            tcpSocket:
+              port: 3333
+            timeoutSeconds: 3
+    scale:
+      minReplicas: 0
+      maxReplicas: 5
+      rules:
+        - name: http-scaler
+          http:
+            metadata:
+              concurrentRequests: '10'
