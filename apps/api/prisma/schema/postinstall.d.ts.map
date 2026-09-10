@@ -1,0 +1,1 @@
+{"version":3,"file":"postinstall.d.ts","sourceRoot":"","sources":["../src/postinstall.ts"],"names":[],"mappings":";AAMA,KAAK,eAAe,GAAG;IACrB,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,KAAK,CAAC,EAAE,OAAO,CAAC;IAChB,GAAG,CAAC,EAAE,CAAC,OAAO,EAAE,MAAM,KAAK,IAAI,CAAC;CACjC,CAAC;AASF,wBAAgB,oBAAoB,CAAC,OAAO,GAAE,eAAoB,GAAG;IAAE,MAAM,EAAE,MAAM,CAAA;CAAE,CAyDtF"}

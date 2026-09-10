@@ -70,6 +70,9 @@ properties:
       - name: maced-api-key
         keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/MACED-API-KEY
         identity: system
+      - name: posthog-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/POSTHOG-KEY
+        identity: system
   template:
     containers:
       - name: bn-comp-ai
@@ -139,6 +142,12 @@ properties:
             value: comp-ai-org-assets
           - name: FLEET_AGENT_BUCKET_NAME
             value: device-agents
+          - name: POSTHOG_PERSONAL_API_KEY
+            secretRef: posthog-key
+          - name: POSTHOG_HOST
+            value: https://app.posthog.com
+          - name: POSTHOG_PROJECT_ID
+            value: 466611
         resources:
           cpu: 2
           memory: 4Gi

@@ -56,6 +56,9 @@ properties:
       - name: revalidation-secret
         keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/REVALIDATION-SECRET
         identity: system
+      - name: posthog-key
+        keyVaultUrl: https://brokernote-prod.vault.azure.net/secrets/POSTHOG-KEY
+        identity: system
   template:
     containers:
       - name: bn-comp-app
@@ -125,6 +128,8 @@ properties:
             value: https://crucial-alien-76988.upstash.io
           - name: UPSTASH_REDIS_REST_TOKEN
             secretRef: upstash-redis-rest-token
+          - name: NEXT_PUBLIC_POSTHOG_KEY
+            secretRef: posthog-key
         resources:
           cpu: 1
           memory: 2Gi

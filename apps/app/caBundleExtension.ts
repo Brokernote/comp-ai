@@ -23,6 +23,9 @@ export function caBundleExtension(): BuildExtension {
   return {
     name: 'CABundleExtension',
     onBuildStart: (context) => {
+      const src = findBundleSrc(context.workingDir);
+      if (!src) return;
+
       // Real OS env var at task spawn time — verified flow:
       //   addLayer.deploy.env → manifest.deploy.sync.env → syncEnvVarsWithServer →
       //   taskRunProcessProvider injects into worker env before Node TLS init.
@@ -37,9 +40,10 @@ export function caBundleExtension(): BuildExtension {
     onBuildComplete: async (context: BuildContext, manifest: BuildManifest) => {
       const src = findBundleSrc(context.workingDir);
       if (!src) {
-        throw new Error(
-          `CABundleExtension: rds-global-bundle.pem not found. Searched relative to ${context.workingDir}`,
+        context.logger.log(
+          `CABundleExtension: rds-global-bundle.pem not found relative to ${context.workingDir}, skipping CA bundle copy.`,
         );
+        return;
       }
       const dest = join(manifest.outputPath, BUNDLE_DEST_REL);
       await mkdir(dirname(dest), { recursive: true });

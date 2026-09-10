@@ -13,19 +13,19 @@ export const vercelManifest: IntegrationManifest = {
   auth: {
     type: 'oauth2',
     config: {
-      authorizeUrl: 'https://vercel.com/integrations/{APP_SLUG}/new',
-      tokenUrl: 'https://api.vercel.com/v2/oauth/access_token',
-      scopes: [],
-      pkce: false,
+      authorizeUrl: 'https://vercel.com/oauth/authorize',
+      tokenUrl: 'https://api.vercel.com/login/oauth/token',
+      scopes: ['read:project', 'read:deployment', 'read:deployment-check', 'read:domain'],
+      pkce: true,
       clientAuthMethod: 'body',
-      supportsRefreshToken: false,
+      supportsRefreshToken: true,
       setupInstructions: `## Setting up Vercel OAuth
 
 ### Step 1: Create a Vercel App
 1. Go to your [Vercel Team Settings → Apps](https://vercel.com/your-team/~/settings/apps)
 2. Click **Create**
 3. Fill in:
-   - **Name**: Comp AI Security
+   - **Name**: Comp AI Security (or similar)
    - **Redirect URL**: \`{CALLBACK_URL}\`
 4. Click **Create**
 
@@ -55,8 +55,19 @@ Enter the Client ID, Secret, and the integration slug (from \`vercel.com/integra
   capabilities: ['checks'],
 
   services: [
-    { id: 'monitoring', name: 'Monitoring & Alerting', description: 'Deployment monitoring and alerting configuration checks', enabledByDefault: true, implemented: true },
-    { id: 'security', name: 'Security Settings', description: 'Project security headers and configuration audit', implemented: false },
+    {
+      id: 'monitoring',
+      name: 'Monitoring & Alerting',
+      description: 'Deployment monitoring and alerting configuration checks',
+      enabledByDefault: true,
+      implemented: true,
+    },
+    {
+      id: 'security',
+      name: 'Security Settings',
+      description: 'Project security headers and configuration audit',
+      implemented: false,
+    },
   ],
 
   checks: [monitoringAlertingCheck, appAvailabilityCheck],

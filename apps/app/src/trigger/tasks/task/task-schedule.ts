@@ -306,6 +306,127 @@ export const taskSchedule = schedules.task({
         );
       });
 
+      // Also check and update overdue policies (merged from policy-schedule)
+      try {
+        const candidatePolicies = await db.policy.findMany({
+          where: {
+            status: 'published',
+            reviewDate: { not: null },
+            frequency: { not: null },
+          },
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                members: {
+                  where: {
+                    deactivated: false,
+                    OR: [
+                      { user: { role: { not: 'admin' } } },
+                      { role: { contains: 'owner' } },
+                    ],
+                  },
+                  select: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        const overduePolicies = candidatePolicies.filter((policy) => {
+          if (!policy.reviewDate || !policy.frequency) return false;
+
+          let monthsToAdd = 0;
+          switch (policy.frequency) {
+            case 'monthly':
+              monthsToAdd = 1;
+              break;
+            case 'quarterly':
+              monthsToAdd = 3;
+              break;
+            case 'yearly':
+              monthsToAdd = 12;
+              break;
+            default:
+              monthsToAdd = 0;
+          }
+
+          if (monthsToAdd === 0) return false;
+
+          const nextDueDate = addMonthsToDate(policy.reviewDate, monthsToAdd);
+          return nextDueDate <= now;
+        });
+
+        if (overduePolicies.length > 0) {
+          const policyIds = overduePolicies.map((policy) => policy.id);
+          await db.policy.updateMany({
+            where: { id: { in: policyIds } },
+            data: { status: 'needs_review' },
+          });
+
+          const policyRecipientsMap = new Map<
+            string,
+            {
+              email: string;
+              userId: string;
+              name: string;
+              policy: (typeof overduePolicies)[number];
+            }
+          >();
+
+          for (const policy of overduePolicies) {
+            if (policy.organization && Array.isArray(policy.organization.members)) {
+              for (const entry of policy.organization.members) {
+                const u = entry.user;
+                if (u && u.email && u.id) {
+                  const key = `${u.id}-${policy.id}`;
+                  if (!policyRecipientsMap.has(key)) {
+                    policyRecipientsMap.set(key, {
+                      email: u.email,
+                      userId: u.id,
+                      name: u.name ?? '',
+                      policy,
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          const policyRecipients = Array.from(policyRecipientsMap.values());
+          await novu.triggerBulk({
+            events: policyRecipients.map((recipient) => ({
+              workflowId: 'policy-review-required',
+              to: {
+                subscriberId: `${recipient.userId}-${recipient.policy.organizationId}`,
+                email: recipient.email,
+              },
+              payload: {
+                email: recipient.email,
+                userName: recipient.name,
+                policyName: recipient.policy.name,
+                organizationName: recipient.policy.organization.name,
+                organizationId: recipient.policy.organizationId,
+                policyId: recipient.policy.id,
+                policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
+              },
+            })),
+          });
+          logger.info(`Updated ${overduePolicies.length} policies to "needs_review" status`);
+        }
+      } catch (policyError) {
+        logger.error(`Failed to update overdue policies in task-schedule: ${policyError}`);
+      }
+
       logger.info(
         `Successfully updated ${todoUpdateCount} tasks to "todo" and ${failedUpdateCount} tasks to "failed"`,
       );

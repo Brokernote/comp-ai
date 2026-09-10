@@ -125,7 +125,7 @@ export class PrismaExtension implements BuildExtension {
 
     // Patch schema.prisma to use prisma-client-js (populates @prisma/client at runtime)
     commands.push(
-      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema/schema.prisma && sed -i '/output.*=.*"/d' ./prisma/schema/schema.prisma`,
+      `sed -i 's/provider.*=.*"prisma-client"/provider = "prisma-client-js"/' ./prisma/schema/schema.prisma && sed -i '/output.*=.*"/d' ./prisma/schema/schema.prisma && sed -i '/url.*=.*env(/d' ./prisma/schema/schema.prisma`,
     );
 
     // Generate client from the multi-file schema directory
@@ -205,7 +205,8 @@ export class PrismaExtension implements BuildExtension {
     let schemaContent = readFileSync(localSchemaFile, 'utf8');
     schemaContent = schemaContent
       .replace(/provider\s*=\s*"prisma-client"/g, 'provider = "prisma-client-js"')
-      .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n');
+      .replace(/\s*output\s*=\s*"[^"]*"\n?/g, '\n')
+      .replace(/\s*url\s*=\s*env\("[^"]*"\)\n?/g, '\n');
     writeFileSync(localSchemaFile, schemaContent);
 
     const clientEntryPoint = resolve(context.workingDir, 'node_modules/.prisma/client/default.js');
